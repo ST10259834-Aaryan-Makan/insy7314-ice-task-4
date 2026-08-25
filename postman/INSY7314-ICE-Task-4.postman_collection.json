@@ -1,0 +1,201 @@
+{
+  "info": {
+    "_postman_id": "5955868c-1b41-4d70-a667-insy7314ice4",
+    "name": "INSY7314 ICE Task 4 - Photostore API",
+    "description": "All required Photostore API routes. Enter passwords and tokens only in your local Postman environment/collection; do not export live values.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "1 - Signup",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Created', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('Returns user and token', () => { pm.expect(body.user).to.be.an('object'); pm.expect(body.token).to.be.a('string').and.not.empty; pm.expect(body.user).not.to.have.property('password'); pm.expect(body.user.role).to.eql('user'); });",
+            "if (body.token) pm.collectionVariables.set('userToken', body.token);",
+            "if (body.user && body.user._id) pm.collectionVariables.set('userId', body.user._id);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{testUsername}}\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/auth/signup"
+          }
+        },
+        {
+          "name": "2 - Login",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('OK', () => pm.response.to.have.status(200));",
+            "const body = pm.response.json();",
+            "pm.test('Returns a safe user and JWT', () => { pm.expect(body.token).to.be.a('string').and.not.empty; pm.expect(body.user).not.to.have.property('password'); });",
+            "if (body.token) pm.collectionVariables.set('userToken', body.token);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "3 - Get My Profile",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('OK', () => pm.response.to.have.status(200));",
+            "pm.test('Password is not exposed', () => pm.expect(pm.response.json().user).not.to.have.property('password'));"
+          ] } }],
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}", "type": "text" }], "url": "{{baseUrl}}/api/users/me" }
+        },
+        {
+          "name": "4 - Update My Profile",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('OK', () => pm.response.to.have.status(200));",
+            "pm.test('Username updated safely', () => { const user = pm.response.json().user; pm.expect(user.username).to.eql(pm.collectionVariables.get('updatedUsername')); pm.expect(user).not.to.have.property('password'); });"
+          ] } }],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}", "type": "text" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"{{updatedUsername}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/users/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Administrator Users",
+      "item": [
+        {
+          "name": "5 - Get All Users",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('OK', () => pm.response.to.have.status(200));",
+            "pm.test('Returns safe users array', () => { const users = pm.response.json().users; pm.expect(users).to.be.an('array'); users.forEach(user => pm.expect(user).not.to.have.property('password')); });"
+          ] } }],
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }], "url": "{{baseUrl}}/api/users" }
+        },
+        {
+          "name": "7 - Promote User",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('OK', () => pm.response.to.have.status(200));",
+            "pm.test('Role is admin', () => pm.expect(pm.response.json().user.role).to.eql('admin'));"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }], "url": "{{baseUrl}}/api/users/{{targetUserId}}/promote" }
+        },
+        {
+          "name": "8 - Demote Administrator",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('OK', () => pm.response.to.have.status(200));",
+            "pm.test('Role is user', () => pm.expect(pm.response.json().user.role).to.eql('user'));"
+          ] } }],
+          "request": { "method": "PUT", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }], "url": "{{baseUrl}}/api/users/{{targetUserId}}/demote" }
+        },
+        {
+          "name": "6 - Delete User",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('OK', () => pm.response.to.have.status(200));",
+            "pm.test('Success message returned', () => pm.expect(pm.response.json().message).to.be.a('string'));"
+          ] } }],
+          "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }], "url": "{{baseUrl}}/api/users/{{targetUserId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Photos",
+      "item": [
+        {
+          "name": "9 - Get Gallery",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('OK', () => pm.response.to.have.status(200));",
+            "pm.test('Returns photos array', () => pm.expect(pm.response.json().photos).to.be.an('array'));"
+          ] } }],
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}", "type": "text" }], "url": "{{baseUrl}}/api/photos" }
+        },
+        {
+          "name": "10 - Get All Photos as Admin",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('OK', () => pm.response.to.have.status(200));",
+            "pm.test('Returns photos array', () => pm.expect(pm.response.json().photos).to.be.an('array'));"
+          ] } }],
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }], "url": "{{baseUrl}}/api/photos/all" }
+        },
+        {
+          "name": "11 - Upload Photo",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Created', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('Cloudinary photo fields returned', () => { pm.expect(body.photo.imageUrl).to.be.a('string').and.not.empty; pm.expect(body.photo.cloudinaryPublicId).to.be.a('string').and.not.empty; });",
+            "if (body.photo && body.photo._id) pm.collectionVariables.set('photoId', body.photo._id);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}", "type": "text" }],
+            "body": { "mode": "formdata", "formdata": [
+              { "key": "title", "value": "Postman test photo", "type": "text" },
+              { "key": "description", "value": "Uploaded while testing ICE Task 4", "type": "text" },
+              { "key": "image", "type": "file", "src": [] }
+            ] },
+            "url": "{{baseUrl}}/api/photos"
+          }
+        },
+        {
+          "name": "12 - Update Photo",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('OK', () => pm.response.to.have.status(200));",
+            "pm.test('Metadata updated', () => pm.expect(pm.response.json().photo.title).to.eql('Updated Postman photo'));"
+          ] } }],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}", "type": "text" }],
+            "body": { "mode": "formdata", "formdata": [
+              { "key": "title", "value": "Updated Postman photo", "type": "text" },
+              { "key": "description", "value": "Updated description", "type": "text" },
+              { "key": "image", "description": "Optional replacement image", "type": "file", "src": [], "disabled": true }
+            ] },
+            "url": "{{baseUrl}}/api/photos/{{photoId}}"
+          }
+        },
+        {
+          "name": "13 - Delete Photo",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('OK', () => pm.response.to.have.status(200));",
+            "pm.test('Success message returned', () => pm.expect(pm.response.json().message).to.be.a('string'));"
+          ] } }],
+          "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}", "type": "text" }], "url": "{{baseUrl}}/api/photos/{{photoId}}" }
+        }
+      ]
+    },
+    {
+      "name": "Authorization Checks",
+      "item": [
+        {
+          "name": "Missing Token Returns 401",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Unauthorized', () => pm.response.to.have.status(401));"] } }],
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/users/me" }
+        },
+        {
+          "name": "Normal User Cannot List Users",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('Forbidden', () => pm.response.to.have.status(403));"] } }],
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}", "type": "text" }], "url": "{{baseUrl}}/api/users" }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
+    { "key": "testUsername", "value": "ice_test_user", "type": "string" },
+    { "key": "updatedUsername", "value": "ice_test_user_updated", "type": "string" },
+    { "key": "userEmail", "value": "ice_test_user@example.com", "type": "string" },
+    { "key": "userPassword", "value": "", "type": "string" },
+    { "key": "userToken", "value": "", "type": "string" },
+    { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "userId", "value": "", "type": "string" },
+    { "key": "targetUserId", "value": "", "type": "string" },
+    { "key": "photoId", "value": "", "type": "string" }
+  ]
+}
